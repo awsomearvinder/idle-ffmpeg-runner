@@ -14,6 +14,7 @@ impl PausableProcess {
         self.0.wait().await
     }
 
+    #[allow(unused)]
     pub fn is_finished(&mut self) -> bool {
         self.0.try_wait().unwrap().is_some()
     }
@@ -49,6 +50,7 @@ impl PausableProcess {
             Err(())
         }
     }
+    #[allow(unused)]
     fn is_paused(&self) -> bool {
         self.1 == Status::Paused
     }
