@@ -34,10 +34,14 @@ async fn main() {
 
         let mut proc = pausable_process::PausableProcess::new(child);
         loop {
+            // race user input and ffmpeg
+            // if user input finishes first, pause ffmpeg and wait 60 minutes.
             tokio::select! {
                 _ = activity::get_input() => {
                     proc.pause().unwrap();
                     loop {
+                        // race user input and a 60 minute timer, if 60 minutes pass
+                        // restart the race. :)
                         tokio::select! {
                             _ = activity::get_input() => {
                                 continue;
