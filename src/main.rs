@@ -2,6 +2,8 @@ use std::convert::identity;
 
 use tokio_stream::StreamExt;
 
+mod pausable_process;
+
 #[tokio::main]
 async fn main() {
     let folder = std::env::var_os("USERPROFILE").unwrap();
@@ -21,20 +23,24 @@ async fn main() {
 
     while let Some(file) = videos.next().await {
         println!("{}", file.file_name().to_str().unwrap());
-        let output = tokio::process::Command::new("ffmpeg.exe")
+        let child = tokio::process::Command::new("ffmpeg.exe")
+            .arg("-y")
             .arg("-i")
             .arg(&file.path())
             .arg("output.mp4")
-            .output()
-            .await;
+            .spawn()
+            .unwrap();
 
-        match output {
-            Ok(v) => {
-                let output = String::from_utf8(v.stdout).unwrap();
-                let error = String::from_utf8(v.stderr).unwrap();
-                println!("{output}\n{error}")
+        let mut proc = pausable_process::PausableProcess::new(child);
+        let mut pause_on_drop = pausable_process::PauseOnDrop::new(&mut proc);
+
+        tokio::select! {
+            _ = tokio::time::sleep(tokio::time::Duration::from_secs(10)) => {
+                println!("time finished first");
             }
-            Err(v) => println!("{}", v.to_string()),
+            status = pause_on_drop.wait() => {
+                println!("finished! {}", status.unwrap());
+            },
         }
     }
     println!("Hello, world!");
