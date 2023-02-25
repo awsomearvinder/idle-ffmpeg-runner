@@ -2,6 +2,7 @@ use std::convert::identity;
 
 use tokio_stream::StreamExt;
 
+mod activity;
 mod pausable_process;
 
 #[tokio::main]
@@ -32,16 +33,28 @@ async fn main() {
             .unwrap();
 
         let mut proc = pausable_process::PausableProcess::new(child);
-        let mut pause_on_drop = pausable_process::PauseOnDrop::new(&mut proc);
+        loop {
+            tokio::select! {
+                _ = activity::get_input() => {
+                    proc.pause().unwrap();
+                    loop {
+                        tokio::select! {
+                            _ = activity::get_input() => {
+                                continue;
+                            }
 
-        tokio::select! {
-            _ = tokio::time::sleep(tokio::time::Duration::from_secs(10)) => {
-                  proc.pause().unwrap();
-                println!("time finished first");
+                            _ = tokio::time::sleep(tokio::time::Duration::from_secs(60 * 60)) => {
+                                proc.unpause().unwrap();
+                                break;
+                            }
+                        }
+                    }
+                }
+                status = proc.wait() => {
+                    println!("finished! {}", status.unwrap());
+                    break;
+                },
             }
-            status = pause_on_drop.wait() => {
-                println!("finished! {}", status.unwrap());
-            },
         }
     }
     println!("Hello, world!");
