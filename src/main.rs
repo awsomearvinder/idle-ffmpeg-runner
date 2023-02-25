@@ -36,6 +36,7 @@ async fn main() {
 
         tokio::select! {
             _ = tokio::time::sleep(tokio::time::Duration::from_secs(10)) => {
+                  proc.pause().unwrap();
                 println!("time finished first");
             }
             status = pause_on_drop.wait() => {

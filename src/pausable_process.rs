@@ -53,21 +53,3 @@ impl PausableProcess {
         self.1 == Status::Paused
     }
 }
-
-pub struct PauseOnDrop<'a>(&'a mut PausableProcess);
-impl<'a> PauseOnDrop<'a> {
-    pub fn new(i: &'a mut PausableProcess) -> PauseOnDrop<'a> {
-        Self(i)
-    }
-    pub async fn wait(&mut self) -> Result<std::process::ExitStatus, std::io::Error> {
-        self.0.wait().await
-    }
-}
-
-impl<'a> Drop for PauseOnDrop<'a> {
-    fn drop(&mut self) {
-        if !self.0.is_finished() && !self.0.is_paused() {
-            let _ = self.0.pause();
-        }
-    }
-}
