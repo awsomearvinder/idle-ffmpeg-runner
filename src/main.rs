@@ -2,7 +2,7 @@ use std::convert::identity;
 
 use std::{env, path};
 
-use tokio::{time, process, fs};
+use tokio::{fs, process, time};
 use tokio_stream::StreamExt;
 
 mod activity;
@@ -54,7 +54,6 @@ async fn main() {
             }
         }
     }
-    println!("Hello, world!");
 }
 
 async fn wait_until_active(duration_without_activity: time::Duration) {
