@@ -1,19 +1,19 @@
 use std::convert::identity;
 
-use std::{env, path};
-
 use tokio::{fs, process, time};
 use tokio_stream::StreamExt;
 
 mod activity;
 mod pausable_process;
+mod settings;
 
 use pausable_process::PausableProcess;
+use settings::Settings;
 
 #[tokio::main(flavor = "current_thread")]
 async fn main() {
-    let folder = env::var_os("USERPROFILE").unwrap();
-    let path = path::PathBuf::from(folder).join(r"Videos");
+    let settings = Settings::init().expect("Failed to load settings");
+    let path = settings.videos_folder;
     let entries = fs::read_dir(path).await.unwrap();
     let videos = tokio_stream::wrappers::ReadDirStream::new(entries)
         .filter_map(Result::ok)
@@ -29,11 +29,12 @@ async fn main() {
 
     while let Some(file) = videos.next().await {
         println!("{}", file.file_name().to_str().unwrap());
+        let output_path = settings.output_folder.join(file.file_name());
         let child = process::Command::new("ffmpeg.exe")
             .arg("-y")
             .arg("-i")
             .arg(&file.path())
-            .arg("output.mp4")
+            .arg(&settings.output_folder.join(output_path))
             .spawn()
             .unwrap();
 
