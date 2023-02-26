@@ -35,24 +35,12 @@ async fn main() {
         let mut proc = pausable_process::PausableProcess::new(child);
         loop {
             // race user input and ffmpeg
-            // if user input finishes first, pause ffmpeg and wait 60 minutes.
+            // if user input finishes first, pause ffmpeg and wait for the user to be active.
             tokio::select! {
                 _ = activity::get_input() => {
                     proc.pause().unwrap();
-                    loop {
-                        // race user input and a 60 minute timer, if 60 minutes pass
-                        // restart the race. :)
-                        tokio::select! {
-                            _ = activity::get_input() => {
-                                continue;
-                            }
-
-                            _ = tokio::time::sleep(tokio::time::Duration::from_secs(60 * 60)) => {
-                                proc.unpause().unwrap();
-                                break;
-                            }
-                        }
-                    }
+                    wait_until_active(tokio::time::Duration::from_secs(60 * 60)).await;
+                    proc.unpause().unwrap();
                 }
                 status = proc.wait() => {
                     println!("finished! {}", status.unwrap());
@@ -62,4 +50,18 @@ async fn main() {
         }
     }
     println!("Hello, world!");
+}
+
+async fn wait_until_active(duration_without_activity: tokio::time::Duration) {
+    loop {
+        tokio::select! {
+            _ = activity::get_input() => {
+                continue;
+            }
+
+            _ = tokio::time::sleep(duration_without_activity) => {
+                break;
+            }
+        }
+    }
 }
