@@ -10,7 +10,7 @@ mod pausable_process;
 
 use pausable_process::PausableProcess;
 
-#[tokio::main]
+#[tokio::main(flavor = "current_thread")]
 async fn main() {
     let folder = env::var_os("USERPROFILE").unwrap();
     let path = path::PathBuf::from(folder).join(r"Videos");
