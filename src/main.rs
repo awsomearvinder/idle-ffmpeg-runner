@@ -31,6 +31,7 @@ async fn main() {
         println!("{}", file.file_name().to_str().unwrap());
         let output_path = settings.output_folder.join(file.file_name());
         let child = process::Command::new("ffmpeg.exe")
+            .args(shell_words::split(&settings.ffmpeg_flags).expect("failed to parse ffmpeg flags"))
             .arg("-y")
             .arg("-i")
             .arg(&file.path())

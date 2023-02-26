@@ -11,6 +11,8 @@ pub struct Settings {
     pub output_folder: PathBuf,
     #[serde(default = "wait_time")]
     pub wait_time: u64,
+    #[serde(default = "String::new")]
+    pub ffmpeg_flags: String,
 }
 
 fn wait_time() -> u64 {
