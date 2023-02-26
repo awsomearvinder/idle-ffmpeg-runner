@@ -45,7 +45,7 @@ async fn main() {
             tokio::select! {
                 _ = activity::get_input() => {
                     proc.pause().unwrap();
-                    wait_until_active(time::Duration::from_secs(60 * 60)).await;
+                    wait_until_active(tokio::time::Duration::from_secs(settings.wait_time)).await;
                     proc.unpause().unwrap();
                 }
                 status = proc.wait() => {

@@ -9,6 +9,12 @@ pub struct Settings {
     pub videos_folder: PathBuf,
     #[serde(default = "encoded_folder")]
     pub output_folder: PathBuf,
+    #[serde(default = "wait_time")]
+    pub wait_time: u64,
+}
+
+fn wait_time() -> u64 {
+    3600
 }
 
 fn video_folder() -> PathBuf {
