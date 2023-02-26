@@ -1,3 +1,5 @@
+use winapi::um::debugapi;
+
 #[derive(PartialEq, Eq, Debug)]
 enum Status {
     Paused,
@@ -24,7 +26,7 @@ impl PausableProcess {
             return Ok(());
         }
         let out = match self.0.id() {
-            Some(id) => unsafe { winapi::um::debugapi::DebugActiveProcess(id) },
+            Some(id) => unsafe { debugapi::DebugActiveProcess(id) },
             _ => return Err(()),
         };
         if out != 0 {
@@ -40,7 +42,7 @@ impl PausableProcess {
         }
 
         let out = match self.0.id() {
-            Some(id) => unsafe { winapi::um::debugapi::DebugActiveProcessStop(id) },
+            Some(id) => unsafe { debugapi::DebugActiveProcessStop(id) },
             _ => return Err(()),
         };
         if out != 0 {
