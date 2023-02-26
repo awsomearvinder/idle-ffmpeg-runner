@@ -33,7 +33,7 @@ fn encoded_folder() -> PathBuf {
 
 impl Settings {
     pub fn init() -> Result<Self, ConfigError> {
-        let config_file_global = ProjectDirs::from("", "", "ffmpeg_idler").unwrap();
+        let config_file_global = ProjectDirs::from("", "", "ffmpeg_idle").unwrap();
         Config::builder()
             .add_source(File::with_name("ffmpeg_idle.toml").required(false))
             .add_source(
