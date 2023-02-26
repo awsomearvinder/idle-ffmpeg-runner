@@ -63,6 +63,10 @@ async fn run_encode<T: Stream<Item = DirEntry> + Unpin>(mut videos: T, settings:
                     proc.unpause().unwrap();
                 }
                 status = proc.wait() => {
+                    match status {
+                        Ok(s) if s.success() => fs::remove_file(file.path()).await.unwrap(),
+                        _ => ()
+                    }
                     println!("finished! {}", status.unwrap());
                     break;
                 },
