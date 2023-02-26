@@ -1,7 +1,10 @@
 use std::convert::identity;
 
-use tokio::{fs, process, time};
-use tokio_stream::StreamExt;
+use tokio::{
+    fs::{self, DirEntry},
+    process, time,
+};
+use tokio_stream::{Stream, StreamExt};
 
 mod activity;
 mod pausable_process;
@@ -13,20 +16,27 @@ use settings::Settings;
 #[tokio::main(flavor = "current_thread")]
 async fn main() {
     let settings = Settings::init().expect("Failed to load settings");
-    let path = settings.videos_folder;
-    let entries = fs::read_dir(path).await.unwrap();
-    let videos = tokio_stream::wrappers::ReadDirStream::new(entries)
-        .filter_map(Result::ok)
-        .then(|i| async {
-            match i.file_type().await {
-                Ok(v) if v.is_file() || v.is_symlink() => Some(i),
-                _ => None,
-            }
-        })
-        .filter_map(identity);
+    let path = &settings.videos_folder;
 
-    let mut videos = Box::pin(videos);
+    loop {
+        let entries = fs::read_dir(path).await.unwrap();
+        let videos = tokio_stream::wrappers::ReadDirStream::new(entries)
+            .filter_map(Result::ok)
+            .then(|i| async {
+                match i.file_type().await {
+                    Ok(v) if v.is_file() || v.is_symlink() => Some(i),
+                    _ => None,
+                }
+            })
+            .filter_map(identity);
 
+        let videos = Box::pin(videos);
+        run_encode(videos, &settings).await;
+        time::sleep(time::Duration::from_secs(1)).await;
+    }
+}
+
+async fn run_encode<T: Stream<Item = DirEntry> + Unpin>(mut videos: T, settings: &Settings) {
     while let Some(file) = videos.next().await {
         println!("{}", file.file_name().to_str().unwrap());
         let mut output_path = settings.output_folder.join(file.file_name());
@@ -49,7 +59,7 @@ async fn main() {
             tokio::select! {
                 _ = activity::get_input() => {
                     proc.pause().unwrap();
-                    wait_until_active(tokio::time::Duration::from_secs(settings.wait_time)).await;
+                    wait_until_active(time::Duration::from_secs(settings.wait_time)).await;
                     proc.unpause().unwrap();
                 }
                 status = proc.wait() => {
