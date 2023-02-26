@@ -29,12 +29,15 @@ async fn main() {
 
     while let Some(file) = videos.next().await {
         println!("{}", file.file_name().to_str().unwrap());
-        let output_path = settings.output_folder.join(file.file_name());
+        let mut output_path = settings.output_folder.join(file.file_name());
+        if !settings.output_file_extension.is_empty() {
+            output_path.set_extension(&settings.output_file_extension);
+        }
         let child = process::Command::new("ffmpeg.exe")
-            .args(shell_words::split(&settings.ffmpeg_flags).expect("failed to parse ffmpeg flags"))
             .arg("-y")
             .arg("-i")
             .arg(&file.path())
+            .args(shell_words::split(&settings.ffmpeg_flags).expect("failed to parse ffmpeg flags"))
             .arg(&settings.output_folder.join(output_path))
             .spawn()
             .unwrap();

@@ -13,6 +13,8 @@ pub struct Settings {
     pub wait_time: u64,
     #[serde(default = "String::new")]
     pub ffmpeg_flags: String,
+    #[serde(default = "String::new")]
+    pub output_file_extension: String,
 }
 
 fn wait_time() -> u64 {
