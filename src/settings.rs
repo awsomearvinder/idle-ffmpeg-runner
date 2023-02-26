@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use config::{Config, ConfigError, Environment, File};
-use directories::UserDirs;
+use directories::{ProjectDirs, UserDirs};
 
 #[derive(serde::Deserialize, PartialEq, Eq, Hash, Debug)]
 pub struct Settings {
@@ -33,9 +33,19 @@ fn encoded_folder() -> PathBuf {
 
 impl Settings {
     pub fn init() -> Result<Self, ConfigError> {
+        let config_file_global = ProjectDirs::from("", "", "ffmpeg_idler").unwrap();
         Config::builder()
             .add_source(File::with_name("default.toml"))
             .add_source(File::with_name("ffmpeg_idle.toml").required(false))
+            .add_source(
+                File::from(
+                    config_file_global
+                        .config_dir()
+                        .join("ffmpeg_idle.toml")
+                        .as_path(),
+                )
+                .required(false),
+            )
             .add_source(Environment::with_prefix("FFMPEG_IDLE"))
             .build()?
             .try_deserialize()
