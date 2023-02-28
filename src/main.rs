@@ -45,6 +45,7 @@ async fn run_encode<T: Stream<Item = DirEntry> + Unpin>(mut videos: T, settings:
         }
         let child = process::Command::new("ffmpeg.exe")
             .arg("-y")
+            .arg("-nostdin")
             .arg("-i")
             .arg(&file.path())
             .args(shell_words::split(&settings.ffmpeg_flags).expect("failed to parse ffmpeg flags"))
