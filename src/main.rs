@@ -48,6 +48,15 @@ async fn wait_until_exclusive(file: fs::File) -> Result<fs::File, std::io::Error
     .unwrap()
 }
 
+/// doesn't actually hold exclusive lock.
+fn try_exclusive(file: fs::File) -> Result<bool, std::io::Error> {
+    match file.try_lock_exclusive() {
+        Ok(_) => file.unlock()?,
+        Err(_) => return Ok(false),
+    }
+    Ok(true)
+}
+
 async fn run_encode<T: Stream<Item = DirEntry> + Unpin>(mut videos: T, settings: &Settings) {
     while let Some(file) = videos.next().await {
         println!("{}", file.file_name().to_str().unwrap());
@@ -55,6 +64,14 @@ async fn run_encode<T: Stream<Item = DirEntry> + Unpin>(mut videos: T, settings:
         if !settings.output_file_extension.is_empty() {
             output_path.set_extension(&settings.output_file_extension);
         }
+
+        let f = fs::File::open(file.path()).await.unwrap();
+        // if we aren't exclusive just try the next file, this one is actively being used for something.
+        // e.g. recording.
+        if !try_exclusive(f).unwrap() {
+            continue;
+        }
+
         let child = process::Command::new("ffmpeg.exe")
             .arg("-y")
             .arg("-xerror")
