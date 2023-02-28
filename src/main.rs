@@ -1,3 +1,4 @@
+use fs4::tokio::AsyncFileExt;
 use std::convert::identity;
 
 use tokio::{
@@ -66,7 +67,24 @@ async fn run_encode<T: Stream<Item = DirEntry> + Unpin>(mut videos: T, settings:
                 }
                 status = proc.wait() => {
                     match status {
-                        Ok(s) if s.success() => fs::remove_file(file.path()).await.unwrap(),
+                        // While our file removal stuff is going we can start on the next batch.
+                        Ok(s) if s.success() => tokio::task::spawn(async move {
+                            let f = tokio::fs::File::open(file.path()).await.unwrap();
+
+                            // wait for us to be able to get an exclusive lock.
+                            // note: we immediately unlock and then try to delete it.
+                            // It would be ideal if we could lock and delete so we know no other
+                            // process is using it, but whatever. We do it this way just to attempt
+                            // to make sure no one else is using the file for whatever reason.
+                            tokio::task::spawn_blocking(move ||{
+                                f.lock_exclusive().unwrap();
+                                f.unlock().unwrap();
+                            }).await.unwrap();
+
+                            // *try* to delete the file.
+                            // ignore errors
+                            let _ = fs::remove_file(file.path()).await;
+                        }).await.unwrap(),
                         _ => ()
                     }
                     println!("finished! {}", status.unwrap());
