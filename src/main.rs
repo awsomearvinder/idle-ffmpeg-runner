@@ -37,6 +37,17 @@ async fn main() {
     }
 }
 
+/// doesn't actually hold exclusive lock.
+async fn wait_until_exclusive(file: fs::File) -> Result<fs::File, std::io::Error> {
+    tokio::task::spawn_blocking(move || {
+        file.lock_exclusive()?;
+        file.unlock()?;
+        Ok(file)
+    })
+    .await
+    .unwrap()
+}
+
 async fn run_encode<T: Stream<Item = DirEntry> + Unpin>(mut videos: T, settings: &Settings) {
     while let Some(file) = videos.next().await {
         println!("{}", file.file_name().to_str().unwrap());
@@ -76,10 +87,7 @@ async fn run_encode<T: Stream<Item = DirEntry> + Unpin>(mut videos: T, settings:
                             // It would be ideal if we could lock and delete so we know no other
                             // process is using it, but whatever. We do it this way just to attempt
                             // to make sure no one else is using the file for whatever reason.
-                            tokio::task::spawn_blocking(move ||{
-                                f.lock_exclusive().unwrap();
-                                f.unlock().unwrap();
-                            }).await.unwrap();
+                            let _ = wait_until_exclusive(f).await.unwrap();
 
                             // *try* to delete the file.
                             // ignore errors
