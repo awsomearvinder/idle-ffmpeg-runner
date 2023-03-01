@@ -71,7 +71,7 @@ async fn run_encode<T: Stream<Item = DirEntry> + Unpin>(mut videos: T, settings:
         if mime_guess::from_path(file.path())
             .first_or_octet_stream()
             .type_()
-            == mime::VIDEO
+            != mime::VIDEO
         {
             continue;
         }
