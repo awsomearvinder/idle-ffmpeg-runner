@@ -66,8 +66,7 @@ async fn run_encode<T: Stream<Item = DirEntry> + Unpin>(mut videos: T, settings:
         }
 
         let f = fs::File::open(file.path()).await.unwrap();
-        // if we aren't exclusive just try the next file, this one is actively being used for something.
-        // e.g. recording.
+
         if mime_guess::from_path(file.path())
             .first_or_octet_stream()
             .type_()
@@ -75,6 +74,9 @@ async fn run_encode<T: Stream<Item = DirEntry> + Unpin>(mut videos: T, settings:
         {
             continue;
         }
+
+        // if we aren't exclusive just try the next file, this one is actively being used for something.
+        // e.g. recording.
         if !try_exclusive(f).unwrap() {
             continue;
         }
