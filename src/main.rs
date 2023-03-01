@@ -30,7 +30,7 @@ async fn main() {
 
         let mut videos = Box::pin(videos);
         while let Some(file) = videos.next().await {
-            println!("{}", file.file_name().to_str().unwrap());
+            println!("{}", file.file_name().to_string_lossy());
 
             // ignore non-videos
             if mime_guess::from_path(file.path())
